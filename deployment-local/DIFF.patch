@@ -1,0 +1,55 @@
+--- C:\Users\Administrator\Desktop\售后小灵智能客服\docker-compose.yml
++++ C:\Users\Administrator\Desktop\售后小灵智能客服\deployment-local\docker-compose.local.yml
+@@ -6,7 +6,7 @@
+       MYSQL_ROOT_PASSWORD: root
+       MYSQL_DATABASE: mewhelp
+     ports:
+-      - "3306:3306"
++      - "127.0.0.1:3307:3306"
+     volumes:
+       - mewhelp-mysql-data:/var/lib/mysql
+       - ./sql:/docker-entrypoint-initdb.d:ro   # 首启按文件名序执行 ch02-ddl.sql → ch02-seed.sql
+--- C:\Users\Administrator\Desktop\售后小灵智能客服\app\core\rerank.py
++++ C:\Users\Administrator\Desktop\售后小灵智能客服\deployment-local\bailian\rerank.py
+@@ -19,6 +19,8 @@
+     「上游地址」按字面理解很容易只填到域名。少了版本段会打成 https://host/rerank,
+     上游回 404,而且只在查询时以 hybrid_rerank 失败的形式冒出来,排障要绕一圈。"""
+     base = settings.rerank_base_url.rstrip("/")
++    if base.endswith("/services/rerank/text-rerank/text-rerank"):
++        return base
+     if not _VERSION_SEG.search(base):
+         base += "/v1"
+     return base + "/rerank"
+@@ -68,10 +70,15 @@
+         return []
+     payload = {"model": settings.rerank_model, "query": query, "documents": docs,
+                "top_n": top_n or len(docs)}
++    native = _rerank_url().endswith("/services/rerank/text-rerank/text-rerank")
++    if native:
++        payload = {"model": settings.rerank_model, "input": {"query": query, "documents": docs},
++                   "parameters": {"top_n": top_n or len(docs), "return_documents": False}}
+     resp = await _post(_rerank_url(), payload,
+                        {"Authorization": f"Bearer {settings.rerank_api_key}"}, 60)
+     resp.raise_for_status()
+-    results = resp.json()["results"]
++    data = resp.json()
++    results = data["output"]["results"] if native else data["results"]
+     ranked = sorted(((r["index"], float(r["relevance_score"])) for r in results),
+                     key=lambda x: x[1], reverse=True)
+     return ranked[:top_n] if top_n else ranked
+--- C:\Users\Administrator\Desktop\售后小灵智能客服\app\core\embeddings.py
++++ C:\Users\Administrator\Desktop\售后小灵智能客服\deployment-local\bailian\embeddings.py
+@@ -19,8 +19,11 @@
+ 
+ 
+ async def embed_texts(texts: list[str]) -> list[list[float]]:
+-    resp = await _client().embeddings.create(model=settings.embed_model, input=texts)
+-    return [d.embedding for d in resp.data]
++    vectors = []
++    for offset in range(0, len(texts), 10):
++        resp = await _client().embeddings.create(model=settings.embed_model, input=texts[offset:offset + 10])
++        vectors.extend(d.embedding for d in resp.data)
++    return vectors
+ 
+ 
+ async def embed_query(text: str) -> list[float]:

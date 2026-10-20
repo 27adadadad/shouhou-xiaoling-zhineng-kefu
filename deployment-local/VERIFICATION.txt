@@ -1,0 +1,265 @@
+{
+  "changed_field": "services.mysql.ports",
+  "original_sha256": "9b4ee566ba407d2fd56956f04e23abcfb1392661c4156f58d1a7be4792a8f95c",
+  "modified_sha256": "4862bffbac1cbb2e264ac58436207f98a2281d45f9fdad42d04bdb0d49d58378",
+  "restored_sha256": "9b4ee566ba407d2fd56956f04e23abcfb1392661c4156f58d1a7be4792a8f95c",
+  "results": [
+    {
+      "label": "BASELINE",
+      "command": [
+        "docker",
+        "compose",
+        "-p",
+        "mewhelp",
+        "--project-directory",
+        "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服",
+        "-f",
+        "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\docker-compose.yml",
+        "config",
+        "--format",
+        "json"
+      ],
+      "stdout": "{\n  \"name\": \"mewhelp\",\n  \"networks\": {\n    \"default\": {\n      \"name\": \"mewhelp_default\",\n      \"ipam\": {}\n    }\n  },\n  \"services\": {\n    \"etcd\": {\n      \"command\": [\n        \"etcd\",\n        \"-advertise-client-urls=http://etcd:2379\",\n        \"-listen-client-urls\",\n        \"http://0.0.0.0:2379\",\n        \"--data-dir\",\n        \"/etcd\"\n      ],\n      \"container_name\": \"mewhelp-milvus-etcd\",\n      \"entrypoint\": null,\n      \"environment\": {\n        \"ETCD_AUTO_COMPACTION_MODE\": \"revision\",\n        \"ETCD_AUTO_COMPACTION_RETENTION\": \"1000\",\n        \"ETCD_QUOTA_BACKEND_BYTES\": \"4294967296\",\n        \"ETCD_SNAPSHOT_COUNT\": \"50000\"\n      },\n      \"healthcheck\": {\n        \"test\": [\n          \"CMD\",\n          \"etcdctl\",\n          \"endpoint\",\n          \"health\"\n        ],\n        \"timeout\": \"20s\",\n        \"interval\": \"30s\",\n        \"retries\": 3\n      },\n      \"image\": \"quay.io/coreos/etcd:v3.5.16\",\n      \"networks\": {\n        \"default\": null\n      },\n      \"volumes\": [\n        {\n          \"type\": \"volume\",\n          \"source\": \"mewhelp-milvus-etcd\",\n          \"target\": \"/etcd\",\n          \"volume\": {}\n        }\n      ]\n    },\n    \"milvus-standalone\": {\n      \"command\": [\n        \"milvus\",\n        \"run\",\n        \"standalone\"\n      ],\n      \"container_name\": \"mewhelp-milvus\",\n      \"depends_on\": {\n        \"etcd\": {\n          \"condition\": \"service_started\",\n          \"required\": true\n        },\n        \"minio\": {\n          \"condition\": \"service_started\",\n          \"required\": true\n        }\n      },\n      \"entrypoint\": null,\n      \"environment\": {\n        \"ETCD_ENDPOINTS\": \"etcd:2379\",\n        \"MINIO_ADDRESS\": \"minio:9000\"\n      },\n      \"healthcheck\": {\n        \"test\": [\n          \"CMD\",\n          \"curl\",\n          \"-f\",\n          \"http://localhost:9091/healthz\"\n        ],\n        \"timeout\": \"20s\",\n        \"interval\": \"30s\",\n        \"retries\": 5,\n        \"start_period\": \"1m30s\"\n      },\n      \"image\": \"milvusdb/milvus:v2.6.22\",\n      \"networks\": {\n        \"default\": null\n      },\n      \"ports\": [\n        {\n          \"mode\": \"ingress\",\n          \"target\": 19530,\n          \"published\": \"19530\",\n          \"protocol\": \"tcp\"\n        },\n        {\n          \"mode\": \"ingress\",\n          \"target\": 9091,\n          \"published\": \"9091\",\n          \"protocol\": \"tcp\"\n        }\n      ],\n      \"volumes\": [\n        {\n          \"type\": \"volume\",\n          \"source\": \"mewhelp-milvus-data\",\n          \"target\": \"/var/lib/milvus\",\n          \"volume\": {}\n        }\n      ]\n    },\n    \"minio\": {\n      \"command\": [\n        \"minio\",\n        \"server\",\n        \"/minio_data\",\n        \"--console-address\",\n        \":9001\"\n      ],\n      \"container_name\": \"mewhelp-milvus-minio\",\n      \"entrypoint\": null,\n      \"environment\": {\n        \"MINIO_ACCESS_KEY\": \"minioadmin\",\n        \"MINIO_SECRET_KEY\": \"minioadmin\"\n      },\n      \"healthcheck\": {\n        \"test\": [\n          \"CMD\",\n          \"curl\",\n          \"-f\",\n          \"http://localhost:9000/minio/health/live\"\n        ],\n        \"timeout\": \"20s\",\n        \"interval\": \"30s\",\n        \"retries\": 3\n      },\n      \"image\": \"minio/minio:RELEASE.2024-05-28T17-19-04Z\",\n      \"networks\": {\n        \"default\": null\n      },\n      \"volumes\": [\n        {\n          \"type\": \"volume\",\n          \"source\": \"mewhelp-milvus-minio\",\n          \"target\": \"/minio_data\",\n          \"volume\": {}\n        }\n      ]\n    },\n    \"mysql\": {\n      \"command\": null,\n      \"container_name\": \"mewhelp-mysql\",\n      \"entrypoint\": null,\n      \"environment\": {\n        \"MYSQL_DATABASE\": \"mewhelp\",\n        \"MYSQL_ROOT_PASSWORD\": \"root\"\n      },\n      \"healthcheck\": {\n        \"test\": [\n          \"CMD\",\n          \"mysqladmin\",\n          \"ping\",\n          \"-h\",\n          \"localhost\",\n          \"-proot\"\n        ],\n        \"timeout\": \"3s\",\n        \"interval\": \"3s\",\n        \"retries\": 20\n      },\n      \"image\": \"mysql:8\",\n      \"networks\": {\n        \"default\": null\n      },\n      \"ports\": [\n        {\n          \"mode\": \"ingress\",\n          \"target\": 3306,\n          \"published\": \"3306\",\n          \"protocol\": \"tcp\"\n        }\n      ],\n      \"volumes\": [\n        {\n          \"type\": \"volume\",\n          \"source\": \"mewhelp-mysql-data\",\n          \"target\": \"/var/lib/mysql\",\n          \"volume\": {}\n        },\n        {\n          \"type\": \"bind\",\n          \"source\": \"C:\\\\Users\\\\Administrator\\\\Desktop\\\\售后小灵智能客服\\\\sql\",\n          \"target\": \"/docker-entrypoint-initdb.d\",\n          \"read_only\": true,\n          \"bind\": {}\n        }\n      ]\n    }\n  },\n  \"volumes\": {\n    \"mewhelp-milvus-data\": {\n      \"name\": \"mewhelp_mewhelp-milvus-data\"\n    },\n    \"mewhelp-milvus-etcd\": {\n      \"name\": \"mewhelp_mewhelp-milvus-etcd\"\n    },\n    \"mewhelp-milvus-minio\": {\n      \"name\": \"mewhelp_mewhelp-milvus-minio\"\n    },\n    \"mewhelp-mysql-data\": {\n      \"name\": \"mewhelp_mewhelp-mysql-data\"\n    }\n  }\n}",
+      "stderr": "",
+      "exit": 0,
+      "observed_mysql_port": "3306"
+    },
+    {
+      "label": "MODIFIED",
+      "command": [
+        "docker",
+        "compose",
+        "-p",
+        "mewhelp",
+        "--project-directory",
+        "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服",
+        "-f",
+        "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\deployment-local\\docker-compose.local.yml",
+        "config",
+        "--format",
+        "json"
+      ],
+      "stdout": "{\n  \"name\": \"mewhelp\",\n  \"networks\": {\n    \"default\": {\n      \"name\": \"mewhelp_default\",\n      \"ipam\": {}\n    }\n  },\n  \"services\": {\n    \"etcd\": {\n      \"command\": [\n        \"etcd\",\n        \"-advertise-client-urls=http://etcd:2379\",\n        \"-listen-client-urls\",\n        \"http://0.0.0.0:2379\",\n        \"--data-dir\",\n        \"/etcd\"\n      ],\n      \"container_name\": \"mewhelp-milvus-etcd\",\n      \"entrypoint\": null,\n      \"environment\": {\n        \"ETCD_AUTO_COMPACTION_MODE\": \"revision\",\n        \"ETCD_AUTO_COMPACTION_RETENTION\": \"1000\",\n        \"ETCD_QUOTA_BACKEND_BYTES\": \"4294967296\",\n        \"ETCD_SNAPSHOT_COUNT\": \"50000\"\n      },\n      \"healthcheck\": {\n        \"test\": [\n          \"CMD\",\n          \"etcdctl\",\n          \"endpoint\",\n          \"health\"\n        ],\n        \"timeout\": \"20s\",\n        \"interval\": \"30s\",\n        \"retries\": 3\n      },\n      \"image\": \"quay.io/coreos/etcd:v3.5.16\",\n      \"networks\": {\n        \"default\": null\n      },\n      \"volumes\": [\n        {\n          \"type\": \"volume\",\n          \"source\": \"mewhelp-milvus-etcd\",\n          \"target\": \"/etcd\",\n          \"volume\": {}\n        }\n      ]\n    },\n    \"milvus-standalone\": {\n      \"command\": [\n        \"milvus\",\n        \"run\",\n        \"standalone\"\n      ],\n      \"container_name\": \"mewhelp-milvus\",\n      \"depends_on\": {\n        \"etcd\": {\n          \"condition\": \"service_started\",\n          \"required\": true\n        },\n        \"minio\": {\n          \"condition\": \"service_started\",\n          \"required\": true\n        }\n      },\n      \"entrypoint\": null,\n      \"environment\": {\n        \"ETCD_ENDPOINTS\": \"etcd:2379\",\n        \"MINIO_ADDRESS\": \"minio:9000\"\n      },\n      \"healthcheck\": {\n        \"test\": [\n          \"CMD\",\n          \"curl\",\n          \"-f\",\n          \"http://localhost:9091/healthz\"\n        ],\n        \"timeout\": \"20s\",\n        \"interval\": \"30s\",\n        \"retries\": 5,\n        \"start_period\": \"1m30s\"\n      },\n      \"image\": \"milvusdb/milvus:v2.6.22\",\n      \"networks\": {\n        \"default\": null\n      },\n      \"ports\": [\n        {\n          \"mode\": \"ingress\",\n          \"target\": 19530,\n          \"published\": \"19530\",\n          \"protocol\": \"tcp\"\n        },\n        {\n          \"mode\": \"ingress\",\n          \"target\": 9091,\n          \"published\": \"9091\",\n          \"protocol\": \"tcp\"\n        }\n      ],\n      \"volumes\": [\n        {\n          \"type\": \"volume\",\n          \"source\": \"mewhelp-milvus-data\",\n          \"target\": \"/var/lib/milvus\",\n          \"volume\": {}\n        }\n      ]\n    },\n    \"minio\": {\n      \"command\": [\n        \"minio\",\n        \"server\",\n        \"/minio_data\",\n        \"--console-address\",\n        \":9001\"\n      ],\n      \"container_name\": \"mewhelp-milvus-minio\",\n      \"entrypoint\": null,\n      \"environment\": {\n        \"MINIO_ACCESS_KEY\": \"minioadmin\",\n        \"MINIO_SECRET_KEY\": \"minioadmin\"\n      },\n      \"healthcheck\": {\n        \"test\": [\n          \"CMD\",\n          \"curl\",\n          \"-f\",\n          \"http://localhost:9000/minio/health/live\"\n        ],\n        \"timeout\": \"20s\",\n        \"interval\": \"30s\",\n        \"retries\": 3\n      },\n      \"image\": \"minio/minio:RELEASE.2024-05-28T17-19-04Z\",\n      \"networks\": {\n        \"default\": null\n      },\n      \"volumes\": [\n        {\n          \"type\": \"volume\",\n          \"source\": \"mewhelp-milvus-minio\",\n          \"target\": \"/minio_data\",\n          \"volume\": {}\n        }\n      ]\n    },\n    \"mysql\": {\n      \"command\": null,\n      \"container_name\": \"mewhelp-mysql\",\n      \"entrypoint\": null,\n      \"environment\": {\n        \"MYSQL_DATABASE\": \"mewhelp\",\n        \"MYSQL_ROOT_PASSWORD\": \"root\"\n      },\n      \"healthcheck\": {\n        \"test\": [\n          \"CMD\",\n          \"mysqladmin\",\n          \"ping\",\n          \"-h\",\n          \"localhost\",\n          \"-proot\"\n        ],\n        \"timeout\": \"3s\",\n        \"interval\": \"3s\",\n        \"retries\": 20\n      },\n      \"image\": \"mysql:8\",\n      \"networks\": {\n        \"default\": null\n      },\n      \"ports\": [\n        {\n          \"mode\": \"ingress\",\n          \"host_ip\": \"127.0.0.1\",\n          \"target\": 3306,\n          \"published\": \"3307\",\n          \"protocol\": \"tcp\"\n        }\n      ],\n      \"volumes\": [\n        {\n          \"type\": \"volume\",\n          \"source\": \"mewhelp-mysql-data\",\n          \"target\": \"/var/lib/mysql\",\n          \"volume\": {}\n        },\n        {\n          \"type\": \"bind\",\n          \"source\": \"C:\\\\Users\\\\Administrator\\\\Desktop\\\\售后小灵智能客服\\\\sql\",\n          \"target\": \"/docker-entrypoint-initdb.d\",\n          \"read_only\": true,\n          \"bind\": {}\n        }\n      ]\n    }\n  },\n  \"volumes\": {\n    \"mewhelp-milvus-data\": {\n      \"name\": \"mewhelp_mewhelp-milvus-data\"\n    },\n    \"mewhelp-milvus-etcd\": {\n      \"name\": \"mewhelp_mewhelp-milvus-etcd\"\n    },\n    \"mewhelp-milvus-minio\": {\n      \"name\": \"mewhelp_mewhelp-milvus-minio\"\n    },\n    \"mewhelp-mysql-data\": {\n      \"name\": \"mewhelp_mewhelp-mysql-data\"\n    }\n  }\n}",
+      "stderr": "",
+      "exit": 0,
+      "observed_mysql_port": "3307"
+    },
+    {
+      "command": "ROLLBACK.sh rollback-check.yml",
+      "stdout": "",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "label": "ROLLBACK",
+      "command": [
+        "docker",
+        "compose",
+        "-p",
+        "mewhelp",
+        "--project-directory",
+        "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服",
+        "-f",
+        "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\deployment-local\\rollback-check.yml",
+        "config",
+        "--format",
+        "json"
+      ],
+      "stdout": "{\n  \"name\": \"mewhelp\",\n  \"networks\": {\n    \"default\": {\n      \"name\": \"mewhelp_default\",\n      \"ipam\": {}\n    }\n  },\n  \"services\": {\n    \"etcd\": {\n      \"command\": [\n        \"etcd\",\n        \"-advertise-client-urls=http://etcd:2379\",\n        \"-listen-client-urls\",\n        \"http://0.0.0.0:2379\",\n        \"--data-dir\",\n        \"/etcd\"\n      ],\n      \"container_name\": \"mewhelp-milvus-etcd\",\n      \"entrypoint\": null,\n      \"environment\": {\n        \"ETCD_AUTO_COMPACTION_MODE\": \"revision\",\n        \"ETCD_AUTO_COMPACTION_RETENTION\": \"1000\",\n        \"ETCD_QUOTA_BACKEND_BYTES\": \"4294967296\",\n        \"ETCD_SNAPSHOT_COUNT\": \"50000\"\n      },\n      \"healthcheck\": {\n        \"test\": [\n          \"CMD\",\n          \"etcdctl\",\n          \"endpoint\",\n          \"health\"\n        ],\n        \"timeout\": \"20s\",\n        \"interval\": \"30s\",\n        \"retries\": 3\n      },\n      \"image\": \"quay.io/coreos/etcd:v3.5.16\",\n      \"networks\": {\n        \"default\": null\n      },\n      \"volumes\": [\n        {\n          \"type\": \"volume\",\n          \"source\": \"mewhelp-milvus-etcd\",\n          \"target\": \"/etcd\",\n          \"volume\": {}\n        }\n      ]\n    },\n    \"milvus-standalone\": {\n      \"command\": [\n        \"milvus\",\n        \"run\",\n        \"standalone\"\n      ],\n      \"container_name\": \"mewhelp-milvus\",\n      \"depends_on\": {\n        \"etcd\": {\n          \"condition\": \"service_started\",\n          \"required\": true\n        },\n        \"minio\": {\n          \"condition\": \"service_started\",\n          \"required\": true\n        }\n      },\n      \"entrypoint\": null,\n      \"environment\": {\n        \"ETCD_ENDPOINTS\": \"etcd:2379\",\n        \"MINIO_ADDRESS\": \"minio:9000\"\n      },\n      \"healthcheck\": {\n        \"test\": [\n          \"CMD\",\n          \"curl\",\n          \"-f\",\n          \"http://localhost:9091/healthz\"\n        ],\n        \"timeout\": \"20s\",\n        \"interval\": \"30s\",\n        \"retries\": 5,\n        \"start_period\": \"1m30s\"\n      },\n      \"image\": \"milvusdb/milvus:v2.6.22\",\n      \"networks\": {\n        \"default\": null\n      },\n      \"ports\": [\n        {\n          \"mode\": \"ingress\",\n          \"target\": 19530,\n          \"published\": \"19530\",\n          \"protocol\": \"tcp\"\n        },\n        {\n          \"mode\": \"ingress\",\n          \"target\": 9091,\n          \"published\": \"9091\",\n          \"protocol\": \"tcp\"\n        }\n      ],\n      \"volumes\": [\n        {\n          \"type\": \"volume\",\n          \"source\": \"mewhelp-milvus-data\",\n          \"target\": \"/var/lib/milvus\",\n          \"volume\": {}\n        }\n      ]\n    },\n    \"minio\": {\n      \"command\": [\n        \"minio\",\n        \"server\",\n        \"/minio_data\",\n        \"--console-address\",\n        \":9001\"\n      ],\n      \"container_name\": \"mewhelp-milvus-minio\",\n      \"entrypoint\": null,\n      \"environment\": {\n        \"MINIO_ACCESS_KEY\": \"minioadmin\",\n        \"MINIO_SECRET_KEY\": \"minioadmin\"\n      },\n      \"healthcheck\": {\n        \"test\": [\n          \"CMD\",\n          \"curl\",\n          \"-f\",\n          \"http://localhost:9000/minio/health/live\"\n        ],\n        \"timeout\": \"20s\",\n        \"interval\": \"30s\",\n        \"retries\": 3\n      },\n      \"image\": \"minio/minio:RELEASE.2024-05-28T17-19-04Z\",\n      \"networks\": {\n        \"default\": null\n      },\n      \"volumes\": [\n        {\n          \"type\": \"volume\",\n          \"source\": \"mewhelp-milvus-minio\",\n          \"target\": \"/minio_data\",\n          \"volume\": {}\n        }\n      ]\n    },\n    \"mysql\": {\n      \"command\": null,\n      \"container_name\": \"mewhelp-mysql\",\n      \"entrypoint\": null,\n      \"environment\": {\n        \"MYSQL_DATABASE\": \"mewhelp\",\n        \"MYSQL_ROOT_PASSWORD\": \"root\"\n      },\n      \"healthcheck\": {\n        \"test\": [\n          \"CMD\",\n          \"mysqladmin\",\n          \"ping\",\n          \"-h\",\n          \"localhost\",\n          \"-proot\"\n        ],\n        \"timeout\": \"3s\",\n        \"interval\": \"3s\",\n        \"retries\": 20\n      },\n      \"image\": \"mysql:8\",\n      \"networks\": {\n        \"default\": null\n      },\n      \"ports\": [\n        {\n          \"mode\": \"ingress\",\n          \"target\": 3306,\n          \"published\": \"3306\",\n          \"protocol\": \"tcp\"\n        }\n      ],\n      \"volumes\": [\n        {\n          \"type\": \"volume\",\n          \"source\": \"mewhelp-mysql-data\",\n          \"target\": \"/var/lib/mysql\",\n          \"volume\": {}\n        },\n        {\n          \"type\": \"bind\",\n          \"source\": \"C:\\\\Users\\\\Administrator\\\\Desktop\\\\售后小灵智能客服\\\\sql\",\n          \"target\": \"/docker-entrypoint-initdb.d\",\n          \"read_only\": true,\n          \"bind\": {}\n        }\n      ]\n    }\n  },\n  \"volumes\": {\n    \"mewhelp-milvus-data\": {\n      \"name\": \"mewhelp_mewhelp-milvus-data\"\n    },\n    \"mewhelp-milvus-etcd\": {\n      \"name\": \"mewhelp_mewhelp-milvus-etcd\"\n    },\n    \"mewhelp-milvus-minio\": {\n      \"name\": \"mewhelp_mewhelp-milvus-minio\"\n    },\n    \"mewhelp-mysql-data\": {\n      \"name\": \"mewhelp_mewhelp-mysql-data\"\n    }\n  }\n}",
+      "stderr": "",
+      "exit": 0,
+      "observed_mysql_port": "3306"
+    }
+  ]
+}
+
+STARTUP CHECK
+WEB_HTTP 200 BYTES 58165
+MCP 8101 HTTP 200
+MCP 8102 HTTP 200
+CHAT_HTTP 200
+data: {"delta": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。"}
+
+data: {"event": "done", "conversation_id": 3}
+
+data: [DONE]
+
+
+Milvus unavailable on localhost:19530; knowledge retrieval not verified.
+
+CONTINUATION: build_kb.py exit 0; product-faq 15, returns-policy 9, after-sales-manual 8, product-specs 14, member-benefits 3, billing-shipping 3; total=52 pending.
+MinIO source: milvusdb/minio:RELEASE.2024-05-28T17-19-04Z, digest sha256:648817f3b321ec7a2f86c594ba468fa19eff8ee3ac17a07c03acf7a8a35fda33; locally tagged minio/minio same release for original compose compatibility. Pull exit 0. MySQL/MinIO/etcd observed healthy. smoke_embed.py exit 1 HTTP401 code30014 Token is invalid; smoke_rerank.py exit1 HTTP401. Milvus image download in progress.
+
+BAILIAN supplement
+[
+  {
+    "label": "BASELINE",
+    "command": [
+      "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\.venv\\Scripts\\python.exe",
+      "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\deployment-local\\bailian\\probe.py",
+      "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\app\\core\\rerank.py"
+    ],
+    "stdout": "URL https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank/v1/rerank\nNATIVE_INPUT False\nERROR KeyError\n",
+    "stderr": "",
+    "exit": 1
+  },
+  {
+    "label": "MODIFIED",
+    "command": [
+      "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\.venv\\Scripts\\python.exe",
+      "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\deployment-local\\bailian\\probe.py",
+      "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\deployment-local\\bailian\\rerank.py"
+    ],
+    "stdout": "URL https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank\nNATIVE_INPUT True\nRANKED [(0, 0.9)]\n",
+    "stderr": "",
+    "exit": 0
+  },
+  {
+    "label": "ROLLBACK",
+    "command": [
+      "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\.venv\\Scripts\\python.exe",
+      "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\deployment-local\\bailian\\probe.py",
+      "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\deployment-local\\bailian\\rollback-check\\rerank.py"
+    ],
+    "stdout": "URL https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank/v1/rerank\nNATIVE_INPUT False\nERROR KeyError\n",
+    "stderr": "",
+    "exit": 1
+  }
+]
+original=C:\Users\Administrator\Desktop\售后小灵智能客服\app\core\rerank.py sha256=4dcf55792a81cabc1dfa86ee786ee1fac8835d4e3275b587e5e748f5adcd1d2c modified=C:\Users\Administrator\Desktop\售后小灵智能客服\deployment-local\bailian\rerank.py sha256=e45f0b82202eb7f9d94ec859dcc1279b830bd47b050a85e3844d2ac3a451505a
+original=C:\Users\Administrator\Desktop\售后小灵智能客服\app\core\embeddings.py sha256=f8d7b1507e8bd9bf1a71c0c1c0bbbf5defa9bb82f9d93bdf06e8c0d7da9ed5c7 modified=C:\Users\Administrator\Desktop\售后小灵智能客服\deployment-local\bailian\embeddings.py sha256=ec421308c84e75127242f67cafa9039ff49186ed9e35c9dcc0d641bf94e7d87b
+
+BASELINE command=['C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\.venv\\Scripts\\python.exe', 'C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\deployment-local\\bailian\\probe_embeddings.py', 'C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\app\\core\\embeddings.py']
+stdout=BATCH 21
+ERROR ValueError
+
+stderr=
+exit=1
+
+MODIFIED command=['C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\.venv\\Scripts\\python.exe', 'C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\deployment-local\\bailian\\probe_embeddings.py', 'C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\deployment-local\\bailian\\embeddings.py']
+stdout=BATCH 10
+BATCH 10
+BATCH 1
+VECTORS 21
+
+stderr=
+exit=0
+
+ROLLBACK command=['C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\.venv\\Scripts\\python.exe', 'C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\deployment-local\\bailian\\probe_embeddings.py', 'C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\deployment-local\\bailian\\rollback-check\\embeddings.py']
+stdout=BATCH 21
+ERROR ValueError
+
+stderr=
+exit=1
+
+Tool orchestration error: combined launch/probe command rejected by policy before execution. Corrected to standalone read-only HTTP probe.
+BAILIAN LIVE: embed HTTP200 dimension1024; rerank HTTP200, most relevant index0; vectorization exit0: 52 blocks / Milvus 52 rows.
+
+LIVE CHAT input=七天无理由退货的运费由谁承担？
+stdout HTTP=200
+data: {"event": "citations", "items": [{"n": 1, "id": 20, "section_path": "退货退款政策 / 退换货运费承担", "question": "退换货运费承担", "answer": "无理由退货的退回运费由买家承担;因商品质量问题、发错货、少发漏发导致的退换货,运费由平台承担。换货的往返运费另有区分:非质量问题的换货由买家承担,详见「换货运费」。运费承担以平台售后规则最终判定为准。", "content_type": "policy"}, {"n": 2, "id": 16, "section_path": "退货退款政策 / 无理由退货 / 适用范围", "question": "适用范围", "answer": "自签收之日起 7 天内,商品完好、不影响二次销售的,支持无理由退货。定制类、生鲜类商品除外。本条的 7 天自签收之日起算,只管无理由退货;价保是另一条规则,它的 7 天从下单时间起算。", "content_type": "policy"}, {"n": 3, "id": 1, "section_path": "商品与购物 FAQ / 退货政策是什么", "question": "退货政策是什么", "answer": "支持 7 天无理由退货,商品需保持完好、不影响二次销售,具体以平台售后规则为准。", "content_type": "faq"}, {"n": 4, "id": 22, "section_path": "退货退款政策 / 运输破损处理", "question": "运输破损处理", "answer": "商品运输途中破损的,请在签收后 48 小时内联系客服并提供开箱视频与照片,核实后可免费补发或退款,相关运费由平台承担。", "content_type": "policy"}, {"n": 5, "id": 32, "section_path": "售后手册 / 会员专属售后权益", "question": "会员专属售后权益", "answer": "金卡会员享优先客服接入与上门取件退换货;银卡会员享退换货运费权益 1 次/月。具体权益以会员中心页面标注为准。", "content_type": "manual"}, {"n": 6, "id": 23, "section_path": "退货退款政策 / 不支持退货的商品", "question": "不支持退货的商品", "answer": "定制类、生鲜类、已拆封的猫砂等消耗品,以及标注「不支持无理由退货」的商品,非质量问题不支持退货。", "content_type": "policy"}, {"n": 7, "id": 25, "section_path": "售后手册 / 常见问题处理时限", "question": "常见问题处理时限", "answer": "| 问题类型 | 首次响应 | 处理时限 |\n| --- | --- | --- |\n| 退款 | 2 小时 | 3 个工作日 |\n| 换货 | 2 小时 | 5 个工作日 |\n| 维修 | 4 小时 | 7 个工作日 |\n| 投诉 | 1 小时 | 3 个工作日 |\n| 发票 | 4 小时 | 3 个工作日 |\n| 物流异常 | 2 小时 | 5 个工作日 |\n| 商品咨询 | 1 小时 | 当日 |\n| 价格保护 | 2 小时 | 3 个工作日 |\n| 账户问题 | 2 小时 | 3 个工作日 |\n| 退换货运费 | 2 小时 | 3 个工作日 |", "content_type": "manual"}, {"n": 8, "id": 5, "section_path": "商品与购物 FAQ / 运费怎么算", "question": "运费怎么算", "answer": "单笔订单满 99 元包邮,未满收取 10 元运费,偏远地区运费另计。邮费即运费,按此规则收取。", "content_type": "faq"}, {"n": 9, "id": 2, "section_path": "商品与购物 FAQ / 如何申请退款", "question": "如何申请退款", "answer": "在「我的订单」找到对应订单点击「申请退款」,按提示提交,审核通过后原路退回。", "content_type": "faq"}, {"n": 10, "id": 19, "section_path": "退货退款政策 / 换货政策 / 换货运费", "question": "换货运费", "answer": "非质量问题的换货,往返运费由买家承担;因质量问题或发错货的换货,往返运费由平台承担。少发漏发导致的换货,往返运费同样由平台承担。", "content_type": "policy"}]}
+
+data: {"delta": "七天"}
+
+data: {"delta": "无理由退货的退回"}
+
+data: {"delta": "运费由"}
+
+data: {"delta": "**买家**"}
+
+data: {"delta": "承担["}
+
+data: {"delta": "1]。\n\n补充"}
+
+data: {"delta": "几点"}
+
+data: {"delta": "相关"}
+
+data: {"delta": "规则，供你"}
+
+data: {"delta": "参考："}
+
+data: {"delta": "\n- "}
+
+data: {"delta": "如果是"}
+
+data: {"delta": "**商品"}
+
+data: {"delta": "质量问题、发错货"}
+
+data: {"delta": "、少发漏发**"}
+
+data: {"delta": "导致的退换货，运费"}
+
+data: {"delta": "由平台"}
+
+data: {"delta": "承担[1]"}
+
+data: {"delta": "。\n- 无理由退货"}
+
+data: {"delta": "需"}
+
+data: {"delta": "在**自"}
+
+data: {"delta": "签收之日起 7 "}
+
+data: {"delta": "天内**、商品"}
+
+data: {"delta": "完好且不影响"}
+
+data: {"delta": "二次销售的情况下申请，定制"}
+
+data: {"delta": "类、生"}
+
+data: {"delta": "鲜类商品除外[2"}
+
+data: {"delta": "]。\n- 若"}
+
+data: {"delta": "你是会员"}
+
+data: {"delta": "，可能"}
+
+data: {"delta": "享有"}
+
+data: {"delta": "额外权益：金"}
+
+data: {"delta": "卡会员享"}
+
+data: {"delta": "上门取"}
+
+data: {"delta": "件退换货，银"}
+
+data: {"delta": "卡会员享"}
+
+data: {"delta": "退换货运费权益"}
+
+data: {"delta": " 1 次/月"}
+
+data: {"delta": "，"}
+
+data: {"delta": "具体以会员"}
+
+data: {"delta": "中心页面标注"}
+
+data: {"delta": "为准[5]。\n\n最终"}
+
+data: {"delta": "运费承担以平台售后"}
+
+data: {"delta": "规则判定为准[1]。"}
+
+data: {"delta": "需要"}
+
+data: {"delta": "我帮你查某个"}
+
+data: {"delta": "具体"}
+
+data: {"delta": "订单的退货"}
+
+data: {"delta": "情况吗？"}
+
+data: {"event": "done", "conversation_id": 6}
+
+data: [DONE]
+
+
+stderr= exit=0
