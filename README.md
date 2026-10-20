@@ -1,76 +1,135 @@
-# MewHelp — 电商智能客服 Agent
+# 售后小灵智能客服
 
-《AI Agent 智能客服实战》的配套源码。一个能查订单物流、答政策 FAQ、走退款子流程、
-挖知识补库、还能微调一个主题分类器的完整客服系统。
+基于 **MewHelp《AI Agent 智能客服实战》课程配套源码**的学习实践项目，使用 FastAPI、LangGraph 和 RAG 构建电商售后客服。本仓库新增了阿里云百炼适配副本及本地部署配置，**不是从零原创整个系统**。
 
-代码是随课程一章章长出来的，不分支：ch01 一个纯对话接口起步，到 ch10 收尾时是下面这套东西。
+> 验证状态：百炼聊天、嵌入、重排及带引用的知识问答此前在本机实测成功。**2026-10-20 本次 README 复查中，网页和 API 对同一退货运费问题均返回兜底话术、没有引用，回归原因尚未定位；当前不能宣称知识问答稳定可用。**订单物流、完整退款流程、Langfuse 和模型训练尚未完成端到端验收。文中的运行记录不代表全量测试通过。
 
-## 技术栈
+## 效果展示
 
-FastAPI + LangGraph / LangChain + SQLAlchemy / MySQL + Milvus。
+![售后客服实际首页](docs/images/chat-page.png)
 
-聊天、嵌入、重排三组上游各自直连，没有网关那一层。模型名和地址都在 `.env` 里配
-(`CHAT_*` / `EMBED_*` / `RERANK_*` 三组)，换供应商、换模型不用改代码。
+页面品牌沿用课程源码的「喵喵优选 / 小喵」，仓库项目名为「售后小灵智能客服」。截图来自本地实际运行页面，不是设计稿。
 
-## 跑起来
+此前验证成功的问题：**七天无理由退货的运费由谁承担？**
+
+实际回答要点：无理由退货的退回运费由买家承担；因商品质量问题、发错货、少发漏发导致的退换货，运费由平台承担。响应包含知识库引用及完成事件。
+
+## 能力与技术栈
+
+- **对话编排**：FastAPI + LangGraph / LangChain，包含意图分流、多轮上下文、工具调用和退款子流程。
+- **知识检索**：MySQL 存知识块，Milvus 提供向量与 BM25 召回，随后重排，回答携带引用。
+- **业务工具**：内置订单、FAQ、退款等工具，以及物流 / 售后两台 MCP Server。
+- **扩展章节**：Langfuse 观测、数据飞轮、主题分类器训练与 ONNX 推理；本次部署未验收这些扩展。
+
+### 本仓库的适配内容
+
+| 文件 | 作用 |
+| --- | --- |
+| `deployment-local/bailian/run.py` | 百炼专用启动入口；运行时加载适配副本，不覆盖原应用文件 |
+| `deployment-local/bailian/rerank.py` | 适配百炼原生重排请求及 `output.results` 响应 |
+| `deployment-local/bailian/embeddings.py` | 嵌入按每批最多 10 条拆分请求 |
+| `deployment-local/docker-compose.local.yml` | MySQL 映射至本机 `127.0.0.1:3307`，避开已有 3306 |
+
+## 本地运行：百炼适配版
+
+以下步骤在**仓库根目录**执行。需要 uv、Docker 和 Git；无需手动创建虚拟环境。主链路建议至少准备 8 GB 内存和充足磁盘，实际占用以机器和容器状态为准。
+
+### 1. 获取源码并安装依赖
 
 ```bash
-cp .env.example .env      # 填 CHAT_* / EMBED_* / RERANK_* 三组
-docker compose up -d      # MySQL
-make seed                 # 灌业务测试数据
-make dev                  # 依赖容器 + MCP :8101/:8102 + 应用 :8000
+git clone https://github.com/27adadadad/shouhou-xiaoling-zhineng-kefu.git
+cd shouhou-xiaoling-zhineng-kefu
+uv sync
 ```
 
-浏览器打开 <http://localhost:8000> 就是聊天页。
+### 2. 配置百炼
 
-**详细的安装、配置、建知识库、常见问题，看飞书那篇「MewHelp 项目源码下载」**，
-这里只留一条能把服务拉起来的最短路径。两边写岔了以那篇为准。
+复制 `.env.example` 为 `.env`（PowerShell 用 `Copy-Item .env.example .env`），编辑以下字段。保留模板中的其他配置。
 
-## 代码怎么组织
+```dotenv
+CHAT_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+CHAT_MODEL=你的百炼账号已开通的聊天模型ID
+CHAT_API_KEY=你的百炼API密钥
+EMBED_API_KEY=同一个百炼API密钥
+RERANK_API_KEY=同一个百炼API密钥
+```
 
-| 位置 | 装的是什么 |
-| - | - |
-| `app/api/` | HTTP 入口。聊天、Agent、知识库录入、复核、验收页、成本看板 |
-| `app/graph/` | LangGraph 那张图。`state` 状态、`nodes` 节点、`routing` 分流规则、`build` 组装 |
-| `app/core/` | 单点能力。上游客户端、检索、重排、意图、指代、摘要、置信度、飞轮、可观测 |
-| `app/kb/` | 知识怎么进库。切块、嵌入、双写 MySQL 与 Milvus、去重、从对话里挖问答对 |
-| `app/tools/` | 工具系统。内置 `@tool`、MCP 客户端、注册表、统一执行引擎 |
-| `app/db/` | 表模型与仓储 |
-| `app/static/` | 前端页面。聊天、知识库录入、飞轮待审、观测与成本、主题分布、分类器验收 |
-| `mcp_servers/` | 两台业务 MCP Server，物流和售后各一台，独立进程 |
-| `sql/` | 各章的建表与迁移，容器首启按文件名顺序自动执行 |
-| `scripts/` | 建库、评估、微调这些离线活 |
-| `docs/superpowers/` | 各章的 spec 和 plan。课程实战篇教的就是这套流程，留着当范本 |
+三项密钥字段都需存在，以通过原配置校验。适配入口实际复用 `CHAT_API_KEY`；嵌入固定使用 `text-embedding-v4`（本次实测 1024 维），重排固定使用 `gte-rerank-v2`。
 
-## 各章长出了什么，怎么验
+**当前适配入口的重排地址固定为北京地域 DashScope 地址**。其他地域、Coding Plan 专属密钥、模型权限或配额不保证兼容。不要仅凭聊天成功就认定嵌入和重排也可用。
 
-`make test` 跑全部单测，不打真实模型。下面这些要真服务在跑。
+不要提交 `.env`，也不要将真实密钥写进截图、日志或 README。
 
-| 章 | 这一章长出来的东西 | 验收 |
-| - | - | - |
-| ch01 | 流式对话、结构化提取 | `make eval` |
-| ch02 | 五个 `@tool` 业务工具，单轮 Function Calling | `make eval-agent` |
-| ch03 | 切块、嵌入、MySQL 与 Milvus 双写、对话挖知识 | `make kb-build` `make kb-vectorize` `make eval-retrieval` |
-| ch04 | 混合检索、RRF、重排、Query 改写、四策略评估 | `make smoke-rag` `make eval-rag` |
-| ch05 | LangGraph workflow 骨架 + 主力 Agent 的 ReAct 环 | `make eval-ch05` |
-| ch06 | 分流器、指代消解、退款子流程的 interrupt/resume | `make smoke-interrupt` `make eval-ch06` |
-| ch07 | 上下文管理。滑窗、摘要、前缀缓存 | `make eval-ch07` |
-| ch08 | 工具系统。MCP 动态发现、统一执行引擎、审计日志 | `make eval-ch08` |
-| ch09 | Langfuse 自部署、数据飞轮、成本账 | `make langfuse-up` `make flywheel` `make eval-flywheel` `make cost-report` |
-| ch10 | 主题分类器。语料、微调、阈值扫描、ONNX 推理服务 | `make ch10-corpus` `make ch10-train` `make ch10-eval` |
+### 3. 启动基础容器
 
-每条命令的前置条件（哪些服务得先起、哪张表得先建）写在飞书那篇文档的「各章验收」段里。
-`make help` 也能看到带说明的完整目标清单。
+本次原 MinIO 镜像地址拉取失败，使用 `milvusdb` 命名空间下的同版本镜像，并在本地打兼容标签。此步骤不是声明两个仓库的镜像内容完全相同。
 
-## 端口
+```bash
+docker pull milvusdb/minio:RELEASE.2024-05-28T17-19-04Z
+docker tag milvusdb/minio:RELEASE.2024-05-28T17-19-04Z minio/minio:RELEASE.2024-05-28T17-19-04Z
+docker compose -p mewhelp --project-directory . -f deployment-local/docker-compose.local.yml up -d
+docker compose -p mewhelp --project-directory . -f deployment-local/docker-compose.local.yml ps
+```
 
-| 端口 | 是什么 |
-| - | - |
-| 8000 | 应用 |
-| 8101 / 8102 | 业务 MCP Server，物流 / 售后 |
-| 8110 | ch10 主题分类器推理服务（`make classifier-up` 之后） |
-| 3000 | Langfuse（`make langfuse-up` 之后） |
-| 19530 | Milvus |
+等待 MySQL、etcd、MinIO、Milvus 全部 `healthy`。显式指定 `-p mewhelp` 可避免中文目录导致项目名为空；`--project-directory .` 保证 SQL 挂载路径指向仓库根目录。
 
-应用那几个页面：`/` 聊天、`/kb` 知识库录入、`/review` 飞轮待审、`/observability` 观测与成本、
-`/topics` 主题分布、`/acceptance` 分类器验收。
+首次创建 MySQL 数据卷会自动执行 `sql/` 中的初始化脚本。已有旧卷时应核对表和迁移；不要随意运行 `down -v`，它会删除项目数据库和知识库存储卷。
+
+### 4. 建立知识库
+
+```bash
+uv run python deployment-local/bailian/run.py scripts.build_kb
+uv run python deployment-local/bailian/run.py scripts.vectorize_kb
+```
+
+向量化会调用百炼并消耗对应额度。本次实测 52 个文档块完成向量化，Milvus 中有 52 条记录；后续增补文档后数量可能变化。重新运行建库脚本会检查现有文档块，勿为了重跑直接清库。
+
+### 5. 启动应用与 MCP
+
+打开三个终端，每个终端都进入仓库根目录，分别保持以下进程运行：
+
+```bash
+# 终端一：物流 MCP
+uv run python mcp_servers/logistics_server.py
+
+# 终端二：售后 MCP
+uv run python mcp_servers/aftersales_server.py
+
+# 终端三：百炼适配应用
+uv run python deployment-local/bailian/run.py
+```
+
+访问 <http://127.0.0.1:8000/>。停止时在各终端按 `Ctrl+C`。日常停容器可使用同一 Compose 命令的 `stop`，不会删除数据卷。
+
+**不要用原版 `make dev` 替代百炼入口**：它不会加载上述适配副本。原版评估脚本也不一定会加载适配；需要适配配置的 Python 模块应通过 `run.py 模块名` 执行。原版 `smoke_rerank.py` 直接请求硅基流动格式，不能作为百炼原生重排的通过依据。
+
+## 验证记录与边界
+
+| 项目 | 本次已观察结果 |
+| --- | --- |
+| 四个基础容器 | MySQL、etcd、MinIO、Milvus 均 healthy |
+| 百炼嵌入 / 重排 | 真实接口均 HTTP 200；嵌入 1024 维，重排返回相关性排序 |
+| 知识库 | 52 个文档块已写入 MySQL 并完成 Milvus 向量化 |
+| 网页 / 知识问答 | 此前页面 HTTP 200 且问答带引用；本次复查 HTTP 200 但回复兜底、无引用，存在未解决回归 |
+| 重排适配离线探针 | 原版无法解析原生响应；副本成功；回滚恢复原版行为 |
+| 嵌入分批离线探针 | 21 条输入由原版单批改为 10 + 10 + 1；回滚恢复单批 |
+| 未完成验收 | 订单物流、完整退款流程、全量单测、Langfuse、飞轮、分类器训练 |
+
+本地依赖安装和一次成功问答，不能证明所有课程章节都可运行。首次克隆到其他电脑的完整安装流程尚未独立复现；网络、权限、内存和模型权限都可能影响结果。Docker 与 Python 曾在本机出现内存分配失败，遇到此类报错应先检查资源，不要把所有服务强行同时拉起。
+
+## 端口与目录
+
+| 端口 | 服务 |
+| --- | --- |
+| 8000 | FastAPI 与聊天页面 |
+| 8101 / 8102 | 物流 / 售后 MCP |
+| 3307 | 本适配版 MySQL 宿主端口，容器内部仍为 3306 |
+| 19530 / 9091 | Milvus / 健康检查 |
+
+核心目录：`app/api` 为接口，`app/graph` 为编排，`app/core` 为模型与检索能力，`app/kb` 为知识库处理，`app/tools` 为工具，`mcp_servers` 为独立 MCP 服务，`sql` 为数据库脚本，`scripts` 为评估及离线任务。
+
+## 来源与使用说明
+
+原项目为 **MewHelp《AI Agent 智能客服实战》课程配套源码**，保留了原作者的代码标注。原 README 完整保存在 [课程原版说明](docs/COURSE_README.md)。本仓库的百炼适配、Windows 本地端口避让与运行验证，是在课程源码上的学习实践。
+
+仓库当前未附明确的上游开源许可证。**公开可见不等于获得任意复制、再分发或商用授权**；使用和传播前应核实课程及原作者的授权条件。本仓库不额外授予上游代码的使用权。

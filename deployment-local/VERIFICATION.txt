@@ -263,3 +263,46 @@ data: [DONE]
 
 
 stderr= exit=0
+
+README TRANSACTION
+[
+  {
+    "label": "BASELINE",
+    "command": [
+      "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\.venv\\Scripts\\python.exe",
+      "C:\\Users\\Administrator\\.codex\\worktrees\\xiaoling-readme\\deployment-local\\check_readme.py",
+      "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\README.md"
+    ],
+    "stdout": "bailian_entry False\nport_3307 False\nprovenance False\nregression_boundary False\nimage False\nbalanced_fences True\n",
+    "stderr": "",
+    "exit": 1
+  },
+  {
+    "label": "MODIFIED",
+    "command": [
+      "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\.venv\\Scripts\\python.exe",
+      "C:\\Users\\Administrator\\.codex\\worktrees\\xiaoling-readme\\deployment-local\\check_readme.py",
+      "C:\\Users\\Administrator\\.codex\\worktrees\\xiaoling-readme\\README.md"
+    ],
+    "stdout": "bailian_entry True\nport_3307 True\nprovenance True\nregression_boundary True\nimage True\nbalanced_fences True\n",
+    "stderr": "",
+    "exit": 0
+  },
+  {
+    "label": "ROLLBACK",
+    "command": [
+      "C:\\Users\\Administrator\\Desktop\\售后小灵智能客服\\.venv\\Scripts\\python.exe",
+      "C:\\Users\\Administrator\\.codex\\worktrees\\xiaoling-readme\\deployment-local\\check_readme.py",
+      "C:\\Users\\Administrator\\.codex\\worktrees\\xiaoling-readme\\deployment-local\\readme-rollback-check\\README.md"
+    ],
+    "stdout": "bailian_entry False\nport_3307 False\nprovenance False\nregression_boundary False\nimage False\nbalanced_fences True\n",
+    "stderr": "",
+    "exit": 1
+  }
+]
+original_sha256=d33187a7a67c2ebdd5c6e840db223087d154304ce297dddee138f0d3c51f2ecc
+modified_sha256=1fc5bc17b0104d4c918ea9eb5f787bf0b6199bbb1be60805876227e49205ec7d
+rollback_sha256=d33187a7a67c2ebdd5c6e840db223087d154304ce297dddee138f0d3c51f2ecc
+Screenshot initial write outside browser roots rejected; retried allowed .playwright-mcp path then copied. Browser and HTTP probe 2026-10-20 returned fallback, no citations. Document explicitly records unresolved regression.
+
+Documentation preflight: git diff --check exit2 flagged required single-space context lines inside unified DIFF.patch. Corrected whitespace check excludes the patch artifact and checks actual edited documents/scripts; patch content retained unchanged.
